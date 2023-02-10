@@ -13,8 +13,8 @@
 #include "lwip/err.h"
 #include "lwip/sys.h"
 
-#define WIFI_SSID      ""
-#define WIFI_PASS      ""
+#define WIFI_SSID      "JANIVAL"
+#define WIFI_PASS      "bel6lagd12@"
 #define WIFI_MAXIMUM_RETRY  5
 
 #define WIFI_CONNECTED_BIT BIT0
@@ -25,7 +25,7 @@
 static EventGroupHandle_t s_wifi_event_group;
 
 static int s_retry_num = 0;
-extern SemaphoreHandle_t conexaoWifiSemaphore;
+extern SemaphoreHandle_t wifiConnectionSemaphore;
 
 static void event_handler(void* arg, esp_event_base_t event_base,
                                 int32_t event_id, void* event_data)
@@ -46,7 +46,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
         ESP_LOGI(TAG, "Endereço IP recebido:" IPSTR, IP2STR(&event->ip_info.ip));
         s_retry_num = 0;
         xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
-        xSemaphoreGive(conexaoWifiSemaphore);
+        xSemaphoreGive(wifiConnectionSemaphore);
     }
 }
 

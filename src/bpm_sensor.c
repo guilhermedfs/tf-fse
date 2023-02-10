@@ -15,7 +15,7 @@ int HBChannel;
 
 void setup(int channel) 
 {
-    adc_init(ADC_UNIT_2);
+    adc_init(ADC_UNIT_1);
     pinMode(channel, GPIO_ANALOG);
     HBChannel = channel;
 

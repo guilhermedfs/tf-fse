@@ -3,6 +3,6 @@
 
 #include "adc_module.h"
 
-#define HEARTBEAT_SENSOR ADC_CHANNEL_0
+#define HEARTBEAT_SENSOR ADC_CHANNEL_6
 
 #endif

@@ -9,6 +9,11 @@
 #include "freertos/semphr.h"
 #include "wifi.h"
 #include "mqtt.h"
+#include "driver/gpio.h"
+
+#define RED_LED_PIN 5
+#define YELLOW_LED_PIN 18
+#define PUSH_BUTTON_PIN 0
 
 SemaphoreHandle_t wifiConnectionSemaphore;
 SemaphoreHandle_t mqttConnectionSemaphore;
@@ -16,6 +21,33 @@ SemaphoreHandle_t mqttConnectionSemaphore;
 void bpmTask(void * params)
 {
   monitorBPM();
+}
+
+void turn_on() {
+  gpio_set_direction(YELLOW_LED_PIN, GPIO_MODE_OUTPUT);
+
+  gpio_set_level(YELLOW_LED_PIN, 1);
+}
+
+void init_board() 
+{
+  gpio_set_direction(RED_LED_PIN, GPIO_MODE_OUTPUT);
+  gpio_set_direction(YELLOW_LED_PIN, GPIO_MODE_OUTPUT);
+  gpio_set_level(RED_LED_PIN, 1);
+  gpio_set_level(YELLOW_LED_PIN, 0);
+
+  gpio_set_direction(PUSH_BUTTON_PIN, GPIO_MODE_INPUT);
+
+  while (true)
+  {
+    if (gpio_get_level(PUSH_BUTTON_PIN) == 0)
+    {
+        gpio_set_level(RED_LED_PIN, 0);
+        gpio_set_level(YELLOW_LED_PIN, 1);
+        return;
+    }
+    vTaskDelay(1);
+  }
 }
 
 void handleServerConnection(void * params)
@@ -56,14 +88,17 @@ void app_main()
     ret = nvs_flash_init();
   }
   ESP_ERROR_CHECK(ret);
+
+  init_board();
     
-  wifiConnectionSemaphore = xSemaphoreCreateBinary();
-  mqttConnectionSemaphore = xSemaphoreCreateBinary();
-  wifi_start();
+  // wifiConnectionSemaphore = xSemaphoreCreateBinary();
+  // mqttConnectionSemaphore = xSemaphoreCreateBinary();
+  // wifi_start();
 
-  // setup(HEARTBEAT_SENSOR);
-  // xTaskCreate(&bpmTask,  "BPM Task", 2048, NULL, 1, NULL);
 
+  setup(HEARTBEAT_SENSOR);
+  xTaskCreate(&bpmTask,  "BPM Task", 2048, NULL, 1, NULL);
+  
   // xTaskCreate(&wifiConnected, "Conexão MQTT", 2048, NULL, 1, NULL);
   // xTaskCreate(&handleServerConnection, "Conexão MQTT", 2048, NULL, 1, NULL);
 }

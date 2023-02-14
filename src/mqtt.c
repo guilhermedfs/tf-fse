@@ -127,3 +127,9 @@ void mqtt_send_message(mqtt_message_type type, char *message)
     int message_id = esp_mqtt_client_publish(client, topic, message, 0, 1, 0);
     ESP_LOGI(TAG, "Mensagem enviada, ID: %d", message_id);
 }
+
+void mqtt_stop()
+{
+    esp_mqtt_client_disconnect(client);
+    esp_mqtt_client_destroy(client);
+}

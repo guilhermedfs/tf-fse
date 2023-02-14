@@ -5,6 +5,7 @@
 #define MQTT_ATTRIBUTES_PATH "v1/devices/me/attributes"
 
 void mqtt_start();
+void mqtt_stop();
 
 typedef enum {
     MQTT_TELEMETRY = 0,

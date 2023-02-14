@@ -3,6 +3,15 @@
         "bpm_sensor.h": "c",
         "mqtt.h": "c",
         "gpio_setup.h": "c",
-        "float.h": "c"
+        "float.h": "c",
+        "gpio.h": "c",
+        "semphr.h": "c",
+        "nvs_flash.h": "c",
+        "esp_log.h": "c",
+        "ports.h": "c",
+        "stdio.h": "c",
+        "freertos.h": "c",
+        "esp_timer.h": "c",
+        "wifi.h": "c"
     }
 }

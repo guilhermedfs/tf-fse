@@ -27,15 +27,20 @@ void turnOff()
 {
   gpio_set_level(RED_LED_PIN, 1);
   gpio_set_level(YELLOW_LED_PIN, 0);
-  gpio_config(GPIO_NUM_2);
-  gpio_set_level(GPIO_NUM_2, 1);
+  gpio_set_level(GPIO_NUM_2, 0);
+  isOn = false;
+  mqtt_stop();
+  wifi_stop();
 }
 
 void initHeartbeatRoutine(void * params)
-{
+{    
   setup(HEARTBEAT_SENSOR);
   vTaskDelay(1);
-  monitorBPM();
+  while (isOn)
+  {
+    monitorBPM();
+  }
 }
 
 void wifiConnected(void * params)
@@ -56,6 +61,13 @@ void turnOn() {
     ret = nvs_flash_init();
   }
   ESP_ERROR_CHECK(ret);
+
+  isOn = true;
+
+  gpio_set_level(RED_LED_PIN, 0);
+  gpio_set_level(YELLOW_LED_PIN, 1);
+  gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);
+  gpio_set_level(GPIO_NUM_2, 1);
     
   wifiConnectionSemaphore = xSemaphoreCreateBinary();
   mqttConnectionSemaphore = xSemaphoreCreateBinary();
@@ -72,18 +84,14 @@ void handleButton(void * params)
   gpio_set_level(RED_LED_PIN, 1);
   gpio_set_level(YELLOW_LED_PIN, 0);
 
-   while (true)
-  {
-    if (gpio_get_level(PUSH_BUTTON_PIN) == 0)
-    {
-      gpio_set_level(RED_LED_PIN, 0);
-      gpio_set_level(YELLOW_LED_PIN, 1);
-      turnOn();
-    } else {
-      gpio_set_level(RED_LED_PIN, 1);
-      gpio_set_level(YELLOW_LED_PIN, 0);
-    }
-    vTaskDelay(1);
+while (true)
+{
+  if (gpio_get_level(PUSH_BUTTON_PIN) == 0 && isOn == false) {
+    turnOn();
+  } else if (gpio_get_level(PUSH_BUTTON_PIN) == 1 && isOn == true) {
+    turnOff();
+  }
+  vTaskDelay(1);
   }
 }
 

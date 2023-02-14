@@ -12,6 +12,7 @@
         "stdio.h": "c",
         "freertos.h": "c",
         "esp_timer.h": "c",
-        "wifi.h": "c"
+        "wifi.h": "c",
+        "temp_sensor.h": "c"
     }
 }

@@ -11,6 +11,7 @@
 #include "mqtt.h"
 #include "driver/gpio.h"
 #include "gpio_setup.h"
+#include "temp_sensor.h"
 
 #define RED_LED_PIN 5
 #define YELLOW_LED_PIN 18
@@ -54,11 +55,20 @@ void initHeartbeatRoutine(void * params)
   monitorBPM();
 }
 
-void wifiConnected(void * params)
+void handleTEMP(void *params)
 {
-  while(true)
+  temp_init();
+  if (xSemaphoreTake(mqttConnectionSemaphore, portMAX_DELAY))
   {
-    if(xSemaphoreTake(wifiConnectionSemaphore, portMAX_DELAY))
+    temp_read();
+  }
+}
+
+void wifiConnected(void *params)
+{
+  while (true)
+  {
+    if (xSemaphoreTake(wifiConnectionSemaphore, portMAX_DELAY))
     {
       mqtt_start();
     }
@@ -69,7 +79,8 @@ void app_main()
 {
 
   esp_err_t ret = nvs_flash_init();
-  if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+  if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
+  {
     ESP_ERROR_CHECK(nvs_flash_erase());
     ret = nvs_flash_init();
   }
@@ -80,7 +91,8 @@ void app_main()
   wifiConnectionSemaphore = xSemaphoreCreateBinary();
   mqttConnectionSemaphore = xSemaphoreCreateBinary();
   wifi_start();
-  
+
   xTaskCreate(&wifiConnected, "Conexão Wi-fi", 2048, NULL, 1, NULL);
   xTaskCreate(&initHeartbeatRoutine, "Conexão MQTT", 2048, NULL, 1, NULL);
+  xTaskCreate(&handleTEMP, "Conexão MQTT", 2048, NULL, 1, NULL);
 }

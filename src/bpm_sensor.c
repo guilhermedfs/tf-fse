@@ -38,7 +38,6 @@ void sendHeartbeatMQTTMessage(float heartbeat)
 
 void monitorBPM()
 {
-  float bpm = 0.;
   while (true)
   {
     n = 0;

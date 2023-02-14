@@ -39,17 +39,30 @@ void close_temp()
 
 void temp_read()
 {
+  char message[50];
+  struct dht11_reading data;
+  struct dht11_reading last_data = {
+    .humidity = 0,
+    .temperature = 0,
+  };
   while (1)
   {
-    struct dht11_reading data = DHT11_read();
-    char message[50];
-    sprintf(message, "{\"temperature\": %d},", data.temperature);
+    data = DHT11_read();
+    if (data.temperature != -1)
+    {
+      last_data.temperature = data.temperature;
+    }
+    if (data.humidity != -1)
+    {
+      last_data.humidity = data.humidity;
+    }
+    sprintf(message, "{\"temperature\":\"%d\"}", last_data.temperature);
     printf("%s\n", message);
     mqtt_send_message(MQTT_TELEMETRY, message);
-    sprintf(message, "{\"humidity\": %d}", data.humidity);
-    printf("%s\n", message);
+    sprintf(message, "{\"humidity\":\"%d\"}", last_data.humidity);
     mqtt_send_message(MQTT_TELEMETRY, message);
-    vTaskDelay(10000 / portTICK_PERIOD_MS);
+    printf("%s\n", message);
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
 }
 

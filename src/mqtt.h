@@ -13,5 +13,6 @@ typedef enum {
 } mqtt_message_type;
 
 void mqtt_send_message(mqtt_message_type type, char * message);
+int is_dash_buttom_on();
 
 #endif

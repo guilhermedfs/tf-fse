@@ -93,6 +93,6 @@ void app_main()
   wifi_start();
 
   xTaskCreate(&wifiConnected, "Conexão Wi-fi", 2048, NULL, 1, NULL);
-  xTaskCreate(&initHeartbeatRoutine, "Conexão MQTT", 2048, NULL, 1, NULL);
-  xTaskCreate(&handleTEMP, "Conexão MQTT", 2048, NULL, 1, NULL);
+  xTaskCreate(&initHeartbeatRoutine, "Monitoramento BPM", 8192, NULL, 1, NULL);
+  xTaskCreate(&handleTEMP, "Temperatura e humidade", 4096, NULL, 1, NULL);
 }

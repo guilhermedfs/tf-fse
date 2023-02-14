@@ -86,6 +86,6 @@ void monitorBPM()
     readingsIndex++;
     readingsIndex %= SAMP_SIZE;
     sendHeartbeatMQTTMessage(bpm);
-    vTaskDelay(500/portTICK_PERIOD_MS);
+    vTaskDelay(125/portTICK_PERIOD_MS);
   }
 }

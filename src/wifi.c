@@ -13,10 +13,6 @@
 #include "lwip/err.h"
 #include "lwip/sys.h"
 
-#define WIFI_SSID      "Xiaomi 11 T Pro"
-#define WIFI_PASS      "123456789"
-#define WIFI_MAXIMUM_RETRY  5
-
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT      BIT1
 
@@ -33,7 +29,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
         esp_wifi_connect();
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        if (s_retry_num < WIFI_MAXIMUM_RETRY) {
+        if (s_retry_num < CONFIG_WIFI_MAXIMUM_RETRY) {
             esp_wifi_connect();
             s_retry_num++;
             ESP_LOGI(TAG, "retry to connect to the AP");
@@ -66,8 +62,8 @@ void wifi_start(){
 
     wifi_config_t wifi_config = {
         .sta = {
-            .ssid = WIFI_SSID,
-            .password = WIFI_PASS
+            .ssid = CONFIG_WIFI_SSID,
+            .password = CONFIG_WIFI_PASSWORD
         },
     };
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) );
@@ -88,10 +84,10 @@ void wifi_start(){
      * happened. */
     if (bits & WIFI_CONNECTED_BIT) {
         ESP_LOGI(TAG, "connected to ap SSID:%s password:%s",
-                 WIFI_SSID, WIFI_PASS);
+                 CONFIG_WIFI_SSID, CONFIG_WIFI_PASSWORD);
     } else if (bits & WIFI_FAIL_BIT) {
         ESP_LOGI(TAG, "Failed to connect to SSID:%s, password:%s",
-                 WIFI_SSID, WIFI_PASS);
+                 CONFIG_WIFI_SSID, CONFIG_WIFI_PASSWORD);
     } else {
         ESP_LOGE(TAG, "UNEXPECTED EVENT");
     }

@@ -27,6 +27,8 @@
 extern SemaphoreHandle_t mqttConnectionSemaphore;
 esp_mqtt_client_handle_t client;
 
+int systemON = 0;
+
 static void log_error_if_nonzero(const char *message, int error_code)
 {
     if (error_code != 0)
@@ -35,16 +37,23 @@ static void log_error_if_nonzero(const char *message, int error_code)
     }
 }
 
+int is_dash_buttom_on()
+{
+    return systemON;
+}
+
 void parse_event_data(char *data)
 {
     switch (json_parse_return_comm(data))
     {
     case TURN_ON_SYSTEM:
         ESP_LOGI(TAG, "Turn On System");
+        systemON = 1;
         mqtt_send_message(MQTT_ATRIBUTES, "{\"led_sys_on\": 1}");
         break;
     case TURN_OFF_SYSTEM:
         ESP_LOGI(TAG, "Turn Off System");
+        systemON = 0;
         mqtt_send_message(MQTT_ATRIBUTES, "{\"led_sys_on\": 0}");
         break;
     default:

@@ -5,6 +5,7 @@
 #include "adc_module.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "mqtt.h"
 
 float readings[SAMP_SIZE], beats[BEATS_SIZE], bpmList[BPM_AVG_SIZE];
 float readingsSum, bpmListSum, currentReading, sensorValue, startTime, lastReading, printValue, bpm;
@@ -31,13 +32,23 @@ void setup(int channel)
 	bpmListIndex = 0;
 }
 
+void sendHeartbeatMQTTMessage(float heartbeat)
+{
+  char message[50];
+
+  sprintf(message, "{\"heartbeat\": %f}", heartbeat);
+  mqtt_send_message(MQTT_TELEMETRY, message);
+  printf("enviado \n");
+}
+
 void monitorBPM()
 {
-    while (true)
+  while (true)
   {
+    float heartbeat = 0;
     n = 0;
     startTime = esp_timer_get_time() / 1000;
-    sensorValue = 0.;
+    sensorValue = 0;
     do{
       sensorValue += analogRead(HBChannel);
       n++;
@@ -66,10 +77,9 @@ void monitorBPM()
         bpmListSum += bpm;
         bpmList[bpmListIndex++] = bpm;
         bpmListIndex %= BPM_AVG_SIZE;
-        printValue = bpmListSum/BPM_AVG_SIZE;
+        heartbeat = bpmListSum/BPM_AVG_SIZE;
         
-        printf("%f\n", printValue);
-        
+        printf("%f\n", heartbeat);
         for(int i = BEATS_SIZE-1; i>0; i--) beats[i] = beats[i-1];
       }
     }
@@ -80,6 +90,7 @@ void monitorBPM()
     lastReading = currentReading;
     readingsIndex++;
     readingsIndex %= SAMP_SIZE;
-    vTaskDelay(1);
+    sendHeartbeatMQTTMessage(heartbeat);
+    vTaskDelay(1000/portTICK_PERIOD_MS);
   }
 }

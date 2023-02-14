@@ -15,8 +15,11 @@
 #define YELLOW_LED_PIN 18
 #define PUSH_BUTTON_PIN 0
 
+int heartbeat = 0;
+
 SemaphoreHandle_t wifiConnectionSemaphore;
 SemaphoreHandle_t mqttConnectionSemaphore;
+SemaphoreHandle_t heartbeatSensorSemaphore;
 
 void bpmTask(void * params)
 {
@@ -25,7 +28,6 @@ void bpmTask(void * params)
 
 void turn_on() {
   gpio_set_direction(YELLOW_LED_PIN, GPIO_MODE_OUTPUT);
-
   gpio_set_level(YELLOW_LED_PIN, 1);
 }
 
@@ -52,18 +54,9 @@ void init_board()
 
 void handleServerConnection(void * params)
 {
-  char message[50];
   if(xSemaphoreTake(mqttConnectionSemaphore, portMAX_DELAY))
   {
-    while(true)
-    {
-      float temperature = 30.2;
-      sprintf(message, "{\"temperature\": %f}", temperature);
-      mqtt_send_message(MQTT_TELEMETRY, message);
-      printf("enviado \n");
-      vTaskDelay(3000 / portTICK_PERIOD_MS);
-
-    }
+    monitorBPM();
   }
 }
 
@@ -91,14 +84,15 @@ void app_main()
 
   init_board();
     
-  // wifiConnectionSemaphore = xSemaphoreCreateBinary();
-  // mqttConnectionSemaphore = xSemaphoreCreateBinary();
-  // wifi_start();
+  wifiConnectionSemaphore = xSemaphoreCreateBinary();
+  mqttConnectionSemaphore = xSemaphoreCreateBinary();
+  heartbeatSensorSemaphore = xSemaphoreCreateBinary();
+  wifi_start();
 
 
   setup(HEARTBEAT_SENSOR);
   xTaskCreate(&bpmTask,  "BPM Task", 2048, NULL, 1, NULL);
   
-  // xTaskCreate(&wifiConnected, "Conexão MQTT", 2048, NULL, 1, NULL);
-  // xTaskCreate(&handleServerConnection, "Conexão MQTT", 2048, NULL, 1, NULL);
+  xTaskCreate(&wifiConnected, "Conexão MQTT", 2048, NULL, 1, NULL);
+  xTaskCreate(&handleServerConnection, "Conexão MQTT", 2048, NULL, 1, NULL);
 }

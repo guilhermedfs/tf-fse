@@ -20,6 +20,8 @@
 
 #include "mqtt.h"
 
+#include "analyzeJSON.h"
+
 #define TAG "MQTT"
 
 extern SemaphoreHandle_t mqttConnectionSemaphore;
@@ -27,22 +29,41 @@ esp_mqtt_client_handle_t client;
 
 static void log_error_if_nonzero(const char *message, int error_code)
 {
-    if (error_code != 0) {
+    if (error_code != 0)
+    {
         ESP_LOGE(TAG, "Last error %s: 0x%x", message, error_code);
+    }
+}
+
+void parse_event_data(char *data)
+{
+    switch (json_parse_return_comm(data))
+    {
+    case TURN_ON_SYSTEM:
+        ESP_LOGI(TAG, "Turn On System");
+        mqtt_send_message(MQTT_ATRIBUTES, "{\"led_sys_on\": 1}");
+        break;
+    case TURN_OFF_SYSTEM:
+        ESP_LOGI(TAG, "Turn Off System");
+        mqtt_send_message(MQTT_ATRIBUTES, "{\"led_sys_on\": 0}");
+        break;
+    default:
+        break;
     }
 }
 
 static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data)
 {
-    ESP_LOGD(TAG, "Event dispatched from event loop base=%s, event_id=%d", base, (int) event_id);
+    ESP_LOGD(TAG, "Event dispatched from event loop base=%s, event_id=%d", base, (int)event_id);
     esp_mqtt_event_handle_t event = event_data;
     esp_mqtt_client_handle_t client = event->client;
     int msg_id;
-    switch ((esp_mqtt_event_id_t)event_id) {
+    switch ((esp_mqtt_event_id_t)event_id)
+    {
     case MQTT_EVENT_CONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
         xSemaphoreGive(mqttConnectionSemaphore);
-        msg_id = esp_mqtt_client_subscribe(client, "dispositivos/#", 0);
+        msg_id = esp_mqtt_client_subscribe(client, "v1/devices/me/rpc/request/+", 0);
         break;
     case MQTT_EVENT_DISCONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
@@ -50,8 +71,6 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
 
     case MQTT_EVENT_SUBSCRIBED:
         ESP_LOGI(TAG, "MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
-        msg_id = esp_mqtt_client_publish(client, "/topic/qos0", "data", 0, 0, 0);
-        ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
         break;
     case MQTT_EVENT_UNSUBSCRIBED:
         ESP_LOGI(TAG, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
@@ -63,15 +82,16 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         ESP_LOGI(TAG, "MQTT_EVENT_DATA");
         printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
         printf("DATA=%.*s\r\n", event->data_len, event->data);
+        parse_event_data(event->data);
         break;
     case MQTT_EVENT_ERROR:
         ESP_LOGI(TAG, "MQTT_EVENT_ERROR");
-        if (event->error_handle->error_type == MQTT_ERROR_TYPE_TCP_TRANSPORT) {
+        if (event->error_handle->error_type == MQTT_ERROR_TYPE_TCP_TRANSPORT)
+        {
             log_error_if_nonzero("reported from esp-tls", event->error_handle->esp_tls_last_esp_err);
             log_error_if_nonzero("reported from tls stack", event->error_handle->esp_tls_stack_err);
-            log_error_if_nonzero("captured as transport's socket errno",  event->error_handle->esp_transport_sock_errno);
+            log_error_if_nonzero("captured as transport's socket errno", event->error_handle->esp_transport_sock_errno);
             ESP_LOGI(TAG, "Last errno string (%s)", strerror(event->error_handle->esp_transport_sock_errno));
-
         }
         break;
     default:
@@ -91,7 +111,7 @@ void mqtt_start()
     esp_mqtt_client_start(client);
 }
 
-void mqtt_send_message(mqtt_message_type type, char * message)
+void mqtt_send_message(mqtt_message_type type, char *message)
 {
     char topic[50];
     switch (type)
@@ -99,7 +119,7 @@ void mqtt_send_message(mqtt_message_type type, char * message)
     case MQTT_TELEMETRY:
         strcpy(topic, MQTT_TELEMETRY_PATH);
         break;
-    
+
     case MQTT_ATRIBUTES:
         strcpy(topic, MQTT_ATTRIBUTES_PATH);
         break;

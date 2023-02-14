@@ -43,6 +43,6 @@ void adc_deinit()
 
 int analogRead(adc_channel_t channel){
     int adc_raw;
-    ESP_ERROR_CHECK_WITHOUT_ABORT(adc_oneshot_read(adc1_handle, channel, &adc_raw));
+    ESP_ERROR_CHECK(adc_oneshot_read(adc1_handle, channel, &adc_raw));
     return adc_raw;
 }

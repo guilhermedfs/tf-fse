@@ -1,5 +1,8 @@
 {
     "files.associations": {
-        "bpm_sensor.h": "c"
+        "bpm_sensor.h": "c",
+        "mqtt.h": "c",
+        "gpio_setup.h": "c",
+        "float.h": "c"
     }
 }

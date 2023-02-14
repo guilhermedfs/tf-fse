@@ -13,8 +13,8 @@
 #include "lwip/err.h"
 #include "lwip/sys.h"
 
-#define WIFI_SSID      "JANIVAL"
-#define WIFI_PASS      "bel6lagd12@"
+#define WIFI_SSID      "Xiaomi 11 T Pro"
+#define WIFI_PASS      "123456789"
 #define WIFI_MAXIMUM_RETRY  5
 
 #define WIFI_CONNECTED_BIT BIT0

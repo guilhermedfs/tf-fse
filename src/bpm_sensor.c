@@ -7,8 +7,8 @@
 #include "freertos/task.h"
 #include "mqtt.h"
 
-float readings[SAMP_SIZE], beats[BEATS_SIZE], bpmList[BPM_AVG_SIZE];
-float readingsSum, bpmListSum, currentReading, sensorValue, startTime, lastReading, printValue, bpm;
+float readings[SAMP_SIZE], first, second, third;
+float readingsSum, currentReading, sensorValue, startTime, lastReading, printValue, bpm;
 long int currentTime, readingsIndex, bpmListIndex, lastBeat;
 int riseCount, n;
 bool rising;
@@ -22,13 +22,8 @@ void setup(int channel)
 
 	for(int i = 0; i < SAMP_SIZE; i++)
 		readings[i] = 0;
-	for(int i = 0; i < BPM_AVG_SIZE; i++)
-		bpmList[i] = 0;
-	for(int i = 0; i < BEATS_SIZE; i++)
-		beats[i] = FLT_MAX;
 	readingsSum = 0;
 	readingsIndex = 0;
-	bpmListSum = 0;
 	bpmListIndex = 0;
 }
 
@@ -43,54 +38,55 @@ void sendHeartbeatMQTTMessage(float heartbeat)
 
 void monitorBPM()
 {
+  float bpm = 0.;
   while (true)
   {
-    float heartbeat = 0;
     n = 0;
-    startTime = esp_timer_get_time() / 1000;
+    startTime = esp_timer_get_time();
     sensorValue = 0;
     do{
       sensorValue += analogRead(HBChannel);
       n++;
-      currentTime = esp_timer_get_time() / 1000;
+      currentTime = esp_timer_get_time();
     }while(currentTime < startTime + 20);  
     sensorValue /= n;
     
     readingsSum -= readings[readingsIndex];
     readingsSum += sensorValue;
     readings[readingsIndex] = sensorValue;
-    
     currentReading = readingsSum / SAMP_SIZE;
-    
-    if (currentReading > lastReading && currentReading-lastReading < RISE_LIMIT){
-      riseCount++;
-      if (!rising && riseCount > RISE_THRESHOLD){
-        rising = true;
-        beats[0] = (esp_timer_get_time() / 1000) - lastBeat;
-        lastBeat = esp_timer_get_time() / 1000;
 
-        float beatsSum = 0;
-        for(int i = 0; i < BEATS_SIZE; i++) beatsSum += beats[i];
-        bpm = BEATS_SIZE*60000.0/beatsSum;
+    if (currentReading > lastReading) {
+        riseCount++;
+        if (!rising && riseCount > RISE_THRESHOLD) {
+          //   Ok, we have detected a rising curve, which implies a heartbeat.
+          //   Record the time since last beat, keep track of the two previous
+          //   times (first, second, third) to get a weighed average.
+          // The rising   flag prevents us from detecting the same rise more than once.
+          rising   = true;
+          first = esp_timer_get_time() - lastBeat;
+          lastBeat = esp_timer_get_time();
 
-        bpmListSum -= bpmList[bpmListIndex];
-        bpmListSum += bpm;
-        bpmList[bpmListIndex++] = bpm;
-        bpmListIndex %= BPM_AVG_SIZE;
-        heartbeat = bpmListSum/BPM_AVG_SIZE;
-        
-        printf("%f\n", heartbeat);
-        for(int i = BEATS_SIZE-1; i>0; i--) beats[i] = beats[i-1];
+           // Calculate the weighed average of heartbeat rate
+          // according   to the three last beats
+          bpm = (60000. / (0.4 * first + 0.3 *   second + 0.3 * third))*10000;
+          
+          printf("%f\n", bpm);
+          
+          third = second;
+          second   = first;
+          
+        }
+      } else {
+        //   Ok, the curve is falling
+        rising = false;
+        riseCount = 0;
       }
-    }
-    else{
-      rising = false;
-      riseCount = 0;
-    }
+      
     lastReading = currentReading;
     readingsIndex++;
     readingsIndex %= SAMP_SIZE;
-    sendHeartbeatMQTTMessage(heartbeat);
-    vTaskDelay(1000/portTICK_PERIOD_MS);
+    sendHeartbeatMQTTMessage(bpm);
+    vTaskDelay(500/portTICK_PERIOD_MS);
   }
 }
